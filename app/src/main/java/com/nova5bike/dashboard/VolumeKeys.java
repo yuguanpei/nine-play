@@ -1,0 +1,112 @@
+package com.nova5bike.dashboard;
+
+/** Recognizes single-press, double-press and double-press-hold gestures on a volume key. */
+final class VolumeKeys {
+    interface Listener {
+        /** A single press, resolved only after the double-press window elapses. */
+        void single(boolean up);
+        /** A quick double press. */
+        void skip(boolean up);
+        /** The second press started being held. */
+        void adjustStart(boolean up);
+        /** Continuous adjustment while the second press is held. */
+        void adjustTick(boolean up, long dtMs);
+        /** The held second press was released. */
+        void adjustEnd();
+    }
+
+    private static final int IDLE = 0, FIRST_DOWN = 1, FIRST_UP = 2, SECOND_DOWN = 3, HOLDING = 4;
+    private static final long DOUBLE_WINDOW_MS = 350;
+
+    private final Listener listener;
+    private int state = IDLE;
+    private boolean up;
+    private long firstUpAt, lastTickAt, resolveAt = -1;
+
+    VolumeKeys(Listener listener) {
+        this.listener = listener;
+    }
+
+    /** A volume key went down. {@code repeat} is true for Android's held-key repeat events. */
+    boolean down(boolean up, boolean repeat, long now) {
+        switch (state) {
+            case IDLE:
+                this.up = up;
+                state = FIRST_DOWN;
+                break;
+            case FIRST_DOWN:
+                break; // a single long press: single still fires on release
+            case FIRST_UP:
+                if (!repeat && now - firstUpAt <= DOUBLE_WINDOW_MS) {
+                    this.up = up;
+                    resolveAt = -1;
+                    state = SECOND_DOWN;
+                } else {
+                    this.up = up;
+                    state = FIRST_DOWN; // too late for a double: start a new first press
+                }
+                break;
+            case SECOND_DOWN:
+                if (repeat) {
+                    state = HOLDING;
+                    lastTickAt = now;
+                    listener.adjustStart(up);
+                }
+                break;
+            case HOLDING:
+                break;
+        }
+        return true;
+    }
+
+    boolean up(boolean up, long now) {
+        switch (state) {
+            case FIRST_DOWN:
+                firstUpAt = now;
+                resolveAt = now + DOUBLE_WINDOW_MS;
+                state = FIRST_UP;
+                break;
+            case FIRST_UP:
+                state = IDLE;
+                resolveAt = -1;
+                listener.single(this.up);
+                break;
+            case SECOND_DOWN:
+                state = IDLE;
+                resolveAt = -1;
+                listener.skip(up);
+                break;
+            case HOLDING:
+                state = IDLE;
+                resolveAt = -1;
+                listener.adjustEnd();
+                break;
+            case IDLE:
+                break;
+        }
+        return true;
+    }
+
+    /** Resolve a deferred single press once the double-press window has elapsed. */
+    void resolve(long now) {
+        if (state == FIRST_UP && resolveAt > 0 && now >= resolveAt) {
+            state = IDLE;
+            resolveAt = -1;
+            listener.single(up);
+        }
+    }
+
+    long resolveAt() { return resolveAt; }
+
+    void tick(long now) {
+        if (state == HOLDING) {
+            long dt = lastTickAt > 0 ? Math.max(0, now - lastTickAt) : 0;
+            lastTickAt = now;
+            listener.adjustTick(up, dt);
+        }
+    }
+
+    boolean holding() { return state == HOLDING; }
+
+    int state() { return state; }
+}
