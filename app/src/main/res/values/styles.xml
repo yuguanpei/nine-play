@@ -1,0 +1,18 @@
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowBackground">#0F1826</item>
+        <item name="android:statusBarColor">#0F1826</item>
+        <item name="android:navigationBarColor">#0F1826</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:colorAccent">#A0E9FF</item>
+        <item name="android:colorControlHighlight">#44C6FF78</item>
+    </style>
+    <style name="DayDialog" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#006872</item>
+    </style>
+    <style name="NightDialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">#65E2CE</item>
+    </style>
+</resources>
