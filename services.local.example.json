@@ -1,0 +1,11 @@
+{
+  "amap": {
+    "jsKey": "",
+    "jsCode": "",
+    "webKey": ""
+  },
+  "qweather": {
+    "host": "",
+    "apiKey": ""
+  }
+}
